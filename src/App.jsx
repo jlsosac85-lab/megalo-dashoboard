@@ -8,20 +8,34 @@ import data from './data/sales.json'
 const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 
 const BRAND_COLORS = {
-  'Flash Data': '#e8262e',
-  'Kroon': '#8a2e90',
-  'Pluger': '#f5a81c',
-  'Marca Propia': '#c63040',
+  'Flash Data': '#ff3d46',
+  'Kroon': '#c05ae0',
+  'Pluger': '#ffb02e',
+  'Marca Propia': '#ff5c6a',
 }
-const CAT_COLORS = ['#e8262e', '#f5a81c', '#8a2e90', '#c63040', '#a61c24', '#5c2360']
+const CAT_COLORS = ['#ff3d46', '#ffb02e', '#c05ae0', '#ff5c6a', '#3ddcdc', '#7a2f85']
 // Años más recientes con colores más fuertes
 const YEAR_COLORS = {}
 {
-  const strong = ['#e8262e', '#f5a81c', '#b9a99c', '#d9cfc7']
+  const strong = ['#ff3d46', '#ffb02e', '#8d81a0', '#4f4661']
   ;[...data.years].sort((a, b) => b - a).forEach((y, i) => {
     YEAR_COLORS[y] = strong[Math.min(i, strong.length - 1)]
   })
 }
+
+const GRID = 'rgba(255,255,255,0.08)'
+const TICK = { fontSize: 12, fill: '#e8e2ee', fontWeight: 700 }
+const OUTLINE = {
+  filter:
+    'drop-shadow(1px 0 0 rgba(0,0,0,0.85)) drop-shadow(-1px 0 0 rgba(0,0,0,0.85)) drop-shadow(0 1px 0 rgba(0,0,0,0.85)) drop-shadow(0 -1px 0 rgba(0,0,0,0.85))',
+}
+const TOOLTIP_STYLE = {
+  background: 'rgba(18,14,26,0.95)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 10,
+  color: '#f2eef4',
+}
+const hideOnError = (e) => { e.currentTarget.parentElement.style.display = 'none' }
 
 const fmt = (n) => (n == null ? '—' : Math.round(n).toLocaleString('es-MX'))
 const pct = (n) => (n == null || !isFinite(n) ? '—' : `${n > 0 ? '+' : ''}${(n * 100).toFixed(1)}%`)
@@ -151,10 +165,21 @@ export default function App() {
   return (
     <>
       <header className="header">
-        <img src="/logo-megalo.png" alt="Megalo" />
-        <div>
-          <h1>Dashboard Sell Out</h1>
-          <div className="sub brandfont">UNIDADES · {data.brands.length} MARCAS · {years.join(' / ')}</div>
+        <video className="header-video" src="/cerro.mp4" autoPlay muted loop playsInline />
+        <div className="header-overlay" />
+        <div className="header-inner">
+          <div className="header-side">
+            <span className="ch"><img src="/logo-megalo.png" alt="Megalo" onError={hideOnError} /></span>
+            <span className="ch"><img src="/logo-7eleven.png" alt="7-Eleven" onError={hideOnError} /></span>
+          </div>
+          <div className="titles">
+            <h1>Dashboard Sell Out</h1>
+            <div className="sub brandfont">UNIDADES · {data.brands.length} MARCAS · {years.join(' / ')}</div>
+          </div>
+          <div className="header-side">
+            <span className="ch"><img src="/logo-masbodega.png" alt="Mas Logística" onError={hideOnError} /></span>
+            <span className="ch"><img src="/logo-iconn.png" alt="Iconn" onError={hideOnError} /></span>
+          </div>
         </div>
       </header>
 
@@ -222,11 +247,11 @@ export default function App() {
           <h3>Tendencia mensual — comparativo por año</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlySeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ece5de" />
-              <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={fmt} width={70} />
-              <Tooltip formatter={(v) => fmt(v)} />
-              <Legend />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+              <XAxis dataKey="mes" tick={TICK} stroke={GRID} />
+              <YAxis tick={TICK} stroke={GRID} tickFormatter={fmt} width={70} />
+              <Tooltip formatter={(v) => fmt(v)} contentStyle={TOOLTIP_STYLE} />
+              <Legend wrapperStyle={{ color: '#9b93a6' }} />
               {[...years].sort().map((y) => (
                 <Line
                   key={y}
@@ -234,8 +259,13 @@ export default function App() {
                   dataKey={y}
                   stroke={YEAR_COLORS[y]}
                   strokeWidth={y === year ? 3 : 2}
-                  dot={{ r: y === year ? 3 : 2 }}
+                  dot={{ r: y === year ? 3 : 2, fill: YEAR_COLORS[y], strokeWidth: 0 }}
                   connectNulls={false}
+                  style={
+                    y === year
+                      ? { filter: `${OUTLINE.filter} drop-shadow(0 0 6px ${YEAR_COLORS[y]})` }
+                      : OUTLINE
+                  }
                 />
               ))}
             </LineChart>
@@ -247,15 +277,15 @@ export default function App() {
             <h3>Unidades por marca — {year} vs {year - 1} (YTD comparable)</h3>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={byBrand}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ece5de" />
-                <XAxis dataKey="marca" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={fmt} width={70} />
-                <Tooltip formatter={(v) => fmt(v)} />
-                <Legend />
-                <Bar dataKey={year - 1} fill="#d9cfc7" radius={[4, 4, 0, 0]} />
-                <Bar dataKey={year} radius={[4, 4, 0, 0]}>
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+                <XAxis dataKey="marca" tick={TICK} stroke={GRID} />
+                <YAxis tick={TICK} stroke={GRID} tickFormatter={fmt} width={70} />
+                <Tooltip formatter={(v) => fmt(v)} contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Legend wrapperStyle={{ color: '#9b93a6' }} />
+                <Bar dataKey={year - 1} fill="#4f4661" stroke="rgba(0,0,0,0.85)" strokeWidth={1.5} radius={[4, 4, 0, 0]} />
+                <Bar dataKey={year} stroke="rgba(0,0,0,0.85)" strokeWidth={1.5} radius={[4, 4, 0, 0]}>
                   {byBrand.map((d) => (
-                    <Cell key={d.marca} fill={BRAND_COLORS[d.marca] || '#8a2e90'} />
+                    <Cell key={d.marca} fill={BRAND_COLORS[d.marca] || '#c05ae0'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -265,13 +295,13 @@ export default function App() {
             <h3>Mix por categoría — {year}</h3>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={byCat} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={2}>
+                <Pie data={byCat} dataKey="value" nameKey="name" innerRadius={55} outerRadius={95} paddingAngle={3} stroke="rgba(0,0,0,0.85)" strokeWidth={2}>
                   {byCat.map((d, i) => (
                     <Cell key={d.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => fmt(v)} />
-                <Legend />
+                <Tooltip formatter={(v) => fmt(v)} contentStyle={TOOLTIP_STYLE} />
+                <Legend wrapperStyle={{ color: '#9b93a6' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
