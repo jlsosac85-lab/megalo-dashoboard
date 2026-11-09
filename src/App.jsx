@@ -132,22 +132,45 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
   }, [rowsYear])
 
-  // Filtros propios de la tabla
-  const [tblMarca, setTblMarca] = useState('Todas')
-  const [tblCat, setTblCat] = useState('Todas')
-  const [tblQuery, setTblQuery] = useState('')
+  // Filtros estilo Excel por columna: {col: Set(valores visibles)} — ausencia = todos
+  const [colSel, setColSel] = useState({})
+  const [menuCol, setMenuCol] = useState(null)
+  const [menuQ, setMenuQ] = useState('')
+
+  const colValues = useMemo(() => {
+    const out = {}
+    for (const k of ['sku', 'producto', 'marca', 'categoria']) {
+      out[k] = [...new Set(rowsYear.map((r) => r[k]))].sort()
+    }
+    return out
+  }, [rowsYear])
+
+  const toggleVal = (key, v) => {
+    setColSel((s) => {
+      const cur = s[key] ? new Set(s[key]) : new Set(colValues[key])
+      cur.has(v) ? cur.delete(v) : cur.add(v)
+      const next = { ...s }
+      if (cur.size === colValues[key].length) delete next[key]
+      else next[key] = cur
+      return next
+    })
+  }
+  const clearCol = (key) =>
+    setColSel((s) => {
+      const next = { ...s }
+      delete next[key]
+      return next
+    })
 
   // Tabla SKU con YoY (YTD comparable)
   const skuTable = useMemo(() => {
     const prevMap = {}
     for (const r of rowsPrev) prevMap[r.sku] = r
-    const q = tblQuery.trim().toUpperCase()
     const list = rowsYear
-      .filter(
-        (r) =>
-          (tblMarca === 'Todas' || r.marca === tblMarca) &&
-          (tblCat === 'Todas' || r.categoria === tblCat) &&
-          (!q || r.sku.toUpperCase().includes(q) || r.producto.toUpperCase().includes(q))
+      .filter((r) =>
+        ['sku', 'producto', 'marca', 'categoria'].every(
+          (k) => !colSel[k] || colSel[k].has(r[k])
+        )
       )
       .map((r) => {
       const p = prevMap[r.sku]
@@ -168,10 +191,23 @@ export default function App() {
       if (vb == null) return -1
       return (va > vb ? 1 : va < vb ? -1 : 0) * dir
     })
-  }, [rowsYear, rowsPrev, lastMonth, sortBy, tblMarca, tblCat, tblQuery])
+  }, [rowsYear, rowsPrev, lastMonth, sortBy, colSel])
+
+  const COLS = [
+    { key: 'sku', label: 'SKU', type: 'text' },
+    { key: 'producto', label: 'Producto', type: 'text' },
+    { key: 'marca', label: 'Marca', type: 'text' },
+    { key: 'categoria', label: 'Categoría', type: 'text' },
+    { key: 'total', label: `Total ${year}`, type: 'num' },
+    { key: 'prom', label: 'Prom/mes', type: 'num' },
+    { key: 'prevYtd', label: `YTD ${year - 1}`, type: 'num' },
+    { key: 'yoy', label: 'YoY', type: 'num' },
+  ]
 
   const sort = (key) =>
     setSortBy((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))
+
+  const sortExact = (key, dir) => setSortBy({ key, dir })
 
   const arrow = (key) => (sortBy.key === key ? (sortBy.dir === -1 ? ' ↓' : ' ↑') : '')
 
@@ -227,6 +263,28 @@ export default function App() {
               {c}
             </button>
           ))}
+        </div>
+
+        {/* Descargas */}
+        <div className="card dl-strip">
+          <div className="downloads">
+            <span className="dl-title brandfont">Bases de datos</span>
+            {[
+              { f: 'BD_SELLOUT_MEGALO.xlsx', n: 'Base consolidada', d: 'Todas · 2024–2026' },
+              { f: 'BD_FLASH_DATA.xlsx', n: 'Flash Data', d: 'SKU × mes' },
+              { f: 'BD_KROON.xlsx', n: 'Kroon', d: 'SKU × mes' },
+              { f: 'BD_MARCA_PROPIA.xlsx', n: 'Marca Propia', d: 'SKU × mes' },
+              { f: 'BD_PLUGER.xlsx', n: 'Pluger', d: 'SKU × mes' },
+            ].map((x) => (
+              <a key={x.f} className="dl-card" href={`/descargas/${x.f}`} download>
+                <span className="dl-icon">⬇</span>
+                <span>
+                  <strong>{x.n}</strong>
+                  <small>{x.d}</small>
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
 
         {/* KPIs */}
@@ -322,42 +380,61 @@ export default function App() {
 
         {/* Tabla SKU */}
         <div className="card">
-          <h3>Detalle por SKU — {year} <span style={{ color: '#8a8078', fontWeight: 400 }}>(clic en encabezados para ordenar)</span></h3>
-          <div className="tbl-controls">
-            <input
-              type="search"
-              placeholder="Buscar SKU o producto…"
-              value={tblQuery}
-              onChange={(e) => setTblQuery(e.target.value)}
-            />
-            <label>Marca</label>
-            <select value={tblMarca} onChange={(e) => setTblMarca(e.target.value)}>
-              <option>Todas</option>
-              {data.brands.map((b) => (
-                <option key={b}>{b}</option>
-              ))}
-            </select>
-            <label>Categoría</label>
-            <select value={tblCat} onChange={(e) => setTblCat(e.target.value)}>
-              <option>Todas</option>
-              {data.categories.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-            <span className="tbl-count">{skuTable.length} SKUs</span>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
+          <h3>Detalle por SKU — {year} <span style={{ color: '#8a8078', fontWeight: 400 }}>· {skuTable.length} SKUs · clic en una columna para filtrar y ordenar</span></h3>
+          {menuCol && <div className="menu-overlay" onClick={() => setMenuCol(null)} />}
+          <div style={{ overflowX: 'visible' }}>
             <table>
               <thead>
                 <tr>
-                  <th onClick={() => sort('sku')}>SKU{arrow('sku')}</th>
-                  <th onClick={() => sort('producto')}>Producto{arrow('producto')}</th>
-                  <th onClick={() => sort('marca')}>Marca{arrow('marca')}</th>
-                  <th onClick={() => sort('categoria')}>Categoría{arrow('categoria')}</th>
-                  <th className="num" onClick={() => sort('total')}>Total {year}{arrow('total')}</th>
-                  <th className="num" onClick={() => sort('prom')}>Prom/mes{arrow('prom')}</th>
-                  <th className="num" onClick={() => sort('prevYtd')}>YTD {year - 1}{arrow('prevYtd')}</th>
-                  <th className="num" onClick={() => sort('yoy')}>YoY{arrow('yoy')}</th>
+                  {COLS.map((c) => (
+                    <th key={c.key} className={c.type === 'num' ? 'num th-f' : 'th-f'}>
+                      <button
+                        className={`th-btn ${colSel[c.key] ? 'filtered' : ''}`}
+                        onClick={() => { setMenuCol(menuCol === c.key ? null : c.key); setMenuQ('') }}
+                      >
+                        {c.label}{arrow(c.key)} <span className="caret">{colSel[c.key] ? '▼' : '▾'}</span>
+                      </button>
+                      {menuCol === c.key && (
+                        <div className="col-menu" onClick={(e) => e.stopPropagation()}>
+                          <button className="mi" onClick={() => { sortExact(c.key, 1); setMenuCol(null) }}>↑ Ordenar ascendente</button>
+                          <button className="mi" onClick={() => { sortExact(c.key, -1); setMenuCol(null) }}>↓ Ordenar descendente</button>
+                          {c.type === 'text' && (
+                            <>
+                              <input
+                                className="mi-search"
+                                placeholder="Buscar…"
+                                value={menuQ}
+                                onChange={(e) => setMenuQ(e.target.value)}
+                              />
+                              <label className="mi-check">
+                                <input
+                                  type="checkbox"
+                                  checked={!colSel[c.key]}
+                                  onChange={() => clearCol(c.key)}
+                                />
+                                (Seleccionar todo)
+                              </label>
+                              <div className="col-vals">
+                                {colValues[c.key]
+                                  .filter((v) => !menuQ || String(v).toUpperCase().includes(menuQ.toUpperCase()))
+                                  .map((v) => (
+                                    <label key={v} className="mi-check">
+                                      <input
+                                        type="checkbox"
+                                        checked={!colSel[c.key] || colSel[c.key].has(v)}
+                                        onChange={() => toggleVal(c.key, v)}
+                                      />
+                                      {v}
+                                    </label>
+                                  ))}
+                              </div>
+                              <button className="mi limpiar" onClick={() => { clearCol(c.key); setMenuCol(null) }}>Limpiar filtro</button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
@@ -381,28 +458,6 @@ export default function App() {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Descargas */}
-        <div className="card" style={{ marginTop: 14 }}>
-          <h3>Descargas — Bases de datos en Excel</h3>
-          <div className="downloads">
-            {[
-              { f: 'BD_SELLOUT_MEGALO.xlsx', n: 'Base consolidada', d: 'Todas las marcas · 2024–2026' },
-              { f: 'BD_FLASH_DATA.xlsx', n: 'Flash Data', d: 'Detalle por SKU y mes' },
-              { f: 'BD_KROON.xlsx', n: 'Kroon', d: 'Detalle por SKU y mes' },
-              { f: 'BD_MARCA_PROPIA.xlsx', n: 'Marca Propia', d: 'Detalle por SKU y mes' },
-              { f: 'BD_PLUGER.xlsx', n: 'Pluger', d: 'Detalle por SKU y mes' },
-            ].map((x) => (
-              <a key={x.f} className="dl-card" href={`/descargas/${x.f}`} download>
-                <span className="dl-icon">⬇</span>
-                <span>
-                  <strong>{x.n}</strong>
-                  <small>{x.d}</small>
-                </span>
-              </a>
-            ))}
           </div>
         </div>
 
