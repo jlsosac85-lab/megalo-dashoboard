@@ -200,3 +200,64 @@ tr:hover td { background: rgba(138, 46, 144, 0.05); }
   font-weight: 600;
 }
 .footer { margin-top: 30px; text-align: center; color: var(--gris); font-size: 11px; letter-spacing: 0.14em; }
+
+/* Controles de tabla */
+.tbl-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tbl-controls input[type='search'] {
+  flex: 1;
+  min-width: 200px;
+  padding: 7px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+}
+.tbl-controls label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gris); }
+.tbl-count { font-size: 12px; color: var(--gris); margin-left: auto; }
+
+/* Descargas */
+.downloads {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.dl-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  text-decoration: none;
+  color: var(--texto);
+  transition: all 0.15s;
+  box-shadow: 0 2px 10px rgba(36, 26, 44, 0.05);
+}
+.dl-card:hover {
+  border-color: var(--rojo);
+  box-shadow: 0 4px 16px rgba(224, 30, 40, 0.18);
+  transform: translateY(-1px);
+}
+.dl-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--rojo), var(--morado));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.dl-card strong { display: block; font-size: 13px; }
+.dl-card small { color: var(--gris); font-size: 11px; }

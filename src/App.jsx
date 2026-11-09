@@ -132,11 +132,24 @@ export default function App() {
       .sort((a, b) => b.value - a.value)
   }, [rowsYear])
 
+  // Filtros propios de la tabla
+  const [tblMarca, setTblMarca] = useState('Todas')
+  const [tblCat, setTblCat] = useState('Todas')
+  const [tblQuery, setTblQuery] = useState('')
+
   // Tabla SKU con YoY (YTD comparable)
   const skuTable = useMemo(() => {
     const prevMap = {}
     for (const r of rowsPrev) prevMap[r.sku] = r
-    const list = rowsYear.map((r) => {
+    const q = tblQuery.trim().toUpperCase()
+    const list = rowsYear
+      .filter(
+        (r) =>
+          (tblMarca === 'Todas' || r.marca === tblMarca) &&
+          (tblCat === 'Todas' || r.categoria === tblCat) &&
+          (!q || r.sku.toUpperCase().includes(q) || r.producto.toUpperCase().includes(q))
+      )
+      .map((r) => {
       const p = prevMap[r.sku]
       const curr = r.months.slice(0, lastMonth + 1).reduce((a, b) => a + (b || 0), 0)
       const prevYtd = p ? p.months.slice(0, lastMonth + 1).reduce((a, b) => a + (b || 0), 0) : null
@@ -155,7 +168,7 @@ export default function App() {
       if (vb == null) return -1
       return (va > vb ? 1 : va < vb ? -1 : 0) * dir
     })
-  }, [rowsYear, rowsPrev, lastMonth, sortBy])
+  }, [rowsYear, rowsPrev, lastMonth, sortBy, tblMarca, tblCat, tblQuery])
 
   const sort = (key) =>
     setSortBy((s) => ({ key, dir: s.key === key ? -s.dir : -1 }))
@@ -310,6 +323,29 @@ export default function App() {
         {/* Tabla SKU */}
         <div className="card">
           <h3>Detalle por SKU — {year} <span style={{ color: '#8a8078', fontWeight: 400 }}>(clic en encabezados para ordenar)</span></h3>
+          <div className="tbl-controls">
+            <input
+              type="search"
+              placeholder="Buscar SKU o producto…"
+              value={tblQuery}
+              onChange={(e) => setTblQuery(e.target.value)}
+            />
+            <label>Marca</label>
+            <select value={tblMarca} onChange={(e) => setTblMarca(e.target.value)}>
+              <option>Todas</option>
+              {data.brands.map((b) => (
+                <option key={b}>{b}</option>
+              ))}
+            </select>
+            <label>Categoría</label>
+            <select value={tblCat} onChange={(e) => setTblCat(e.target.value)}>
+              <option>Todas</option>
+              {data.categories.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+            <span className="tbl-count">{skuTable.length} SKUs</span>
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
@@ -345,6 +381,28 @@ export default function App() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Descargas */}
+        <div className="card" style={{ marginTop: 14 }}>
+          <h3>Descargas — Bases de datos en Excel</h3>
+          <div className="downloads">
+            {[
+              { f: 'BD_SELLOUT_MEGALO.xlsx', n: 'Base consolidada', d: 'Todas las marcas · 2024–2026' },
+              { f: 'BD_FLASH_DATA.xlsx', n: 'Flash Data', d: 'Detalle por SKU y mes' },
+              { f: 'BD_KROON.xlsx', n: 'Kroon', d: 'Detalle por SKU y mes' },
+              { f: 'BD_MARCA_PROPIA.xlsx', n: 'Marca Propia', d: 'Detalle por SKU y mes' },
+              { f: 'BD_PLUGER.xlsx', n: 'Pluger', d: 'Detalle por SKU y mes' },
+            ].map((x) => (
+              <a key={x.f} className="dl-card" href={`/descargas/${x.f}`} download>
+                <span className="dl-icon">⬇</span>
+                <span>
+                  <strong>{x.n}</strong>
+                  <small>{x.d}</small>
+                </span>
+              </a>
+            ))}
           </div>
         </div>
 
