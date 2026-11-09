@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "parse": "node scripts/parse-excel.mjs",
-    "dev": "npm run parse && vite",
-    "prebuild": "node scripts/parse-excel.mjs",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },

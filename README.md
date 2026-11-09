@@ -4,7 +4,11 @@ Dashboard de ventas por unidades para las 4 marcas de Megalo (Flash Data, Kroon,
 
 ## Cómo funciona
 
-Los archivos Excel viven en la carpeta `/data`. En cada build, el script `scripts/parse-excel.mjs` los lee, detecta los bloques por año (2024, 2025, 2026...) y genera `src/data/sales.json`, que alimenta el dashboard. No hay base de datos ni backend.
+El dashboard se alimenta de `src/data/sales.json`, que está versionado en el repo. Ese JSON se genera con `scripts/parse-excel.mjs` a partir de los 4 Excel de sell out (bloques por año; solo se lee la PRIMERA hoja de cada archivo). No hay base de datos ni backend.
+
+Flujo mensual actual: los Excel del corte se le pasan a Claude por chat; Claude los valida, regenera `sales.json` y lo sube al repo por API. Vercel redespliega solo. Los Excel en `/data` son copia de referencia y pueden estar desactualizados; la fuente de verdad del dashboard es `sales.json`.
+
+Flujo manual alternativo (sin Claude): coloca los 4 Excel actualizados en `/data`, corre `npm install && npm run parse` y haz commit del `src/data/sales.json` resultante.
 
 ## Despliegue inicial (una sola vez, ~10 minutos)
 

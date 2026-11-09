@@ -42,7 +42,10 @@ if (files.length === 0) {
 
 for (const file of files) {
   const wb = XLSX.read(readFileSync(join(DATA_DIR, file)), { type: 'buffer' })
-  for (const sheetName of wb.SheetNames) {
+  // Solo la PRIMERA hoja de cada archivo: es el formato oficial.
+  // Hojas extra de trabajo ("con pilas", "solo cables", etc.) se ignoran
+  // para no duplicar cifras.
+  for (const sheetName of wb.SheetNames.slice(0, 1)) {
     const grid = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: null })
     let brand = null
     let year = null
